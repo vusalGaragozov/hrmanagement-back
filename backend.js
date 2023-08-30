@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 const User = require('./user');
 const session = require('express-session');
 const MongoStore = require('connect-mongodb-session')(session);
@@ -15,114 +16,13 @@ const PORT = 3001; // Use port from .env file or default to 3001
 
 app.use(bodyParser.json());
 
+// ... (Other imports and configurations)
+
 app.use(cors({
   origin: "http://localhost:3000",
   credentials: true,
-  allowedHeaders: ["Origin", "X-Requested-With", "Content-Type", "Accept"],
+  allowedHeaders: ["Origin", "X-Requested-With", "Content-Type", "Accept", "Authorization"],
 }));
-
-
-mongoose
-  .connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => {
-    console.log('Connected to MongoDB');
-  })
-  .catch((error) => {
-    console.error('Error connecting to MongoDB:', error);
-  });
-
-const store = new MongoStore({
-  uri: process.env.MONGO_URI,
-  collection: 'sessions', // The name of the collection where the sessions will be stored
-  mongooseConnection: mongoose.connection,
-  autoRemove: 'interval',
-  autoRemoveInterval: 60, // Remove expired sessions every 1 minute
-});
-
-
-app.use(
-  session({
-    secret: 'secret',
-    resave: true,
-    saveUninitialized: true,
-    store: store,
-    cookie: {
-      maxAge: 1000 * 60 * 60 * 24, // 1 day
-      secure: process.env.NODE_ENV === 'production',
-      httpOnly: true,
-      sameSite: 'lax',
-    },
-  })
-);
-app.use(passport.initialize());
-app.use(passport.session());
-
-app.post('/register', async (req, res) => {
-  try {
-    const hashedPassword = await bcrypt.hash(req.body.password, 10);
-
-    const newUser = new User({
-      ...req.body,
-      password: hashedPassword,
-    });
-
-    await newUser.save();
-    res.status(201).send(newUser);
-  } catch (error) {
-    res.status(400).send(error);
-  }
-});
-
-// ... (Other imports and configurations)
-
-app.post('/login', (req, res, next) => {
-  passport.authenticate('local', (err, user, info) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-    if (!user) {
-      return res.status(401).json({ error: info.message });
-    }
-    req.login(user, (err) => {
-      if (err) {
-        return res.status(500).json({ error: err.message });
-      }
-      return res.status(200).json({ 
-        message: 'Login successful', user: user,
-        user:user,
-        firstname:user.firstname,
-        lastname:user.lastname});
-    });
-  })(req, res, next);
-});
-
-// ... (Other routes and app.listen)
-
-app.post('/logout', (req, res) => {
-  req.logout(() => {
-    req.session.destroy((err) => {
-      if (err) {
-        console.log('Error: Failed to destroy the session during logout.', err);
-        res.status(500).json({ error: err.message });
-      }
-      res.clearCookie('connect.sid');
-      res.status(200).json({ message: 'Logout successful' });
-    });
-  });
-});
-
-// Add this route to your backend code
-app.get('/check-auth', (req, res) => {
-  if (req.isAuthenticated()) {
-    res.status(200).json({ isLoggedIn: true, user: req.user });
-  } else {
-    res.status(200).json({ isLoggedIn: false });
-  }
-});
-
 
 passport.use(
   new LocalStrategy(
@@ -163,6 +63,140 @@ passport.deserializeUser((id, done) => {
     });
 });
 
+app.use((req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", "http://localhost:3000");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+  res.header("Access-Control-Allow-Credentials", true);
+  next();
+});
+
+// ... (Other middleware and route handlers)
+
+
+
+
+mongoose
+  .connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => {
+    console.log('Connected to MongoDB');
+  })
+  .catch((error) => {
+    console.error('Error connecting to MongoDB:', error);
+  });
+
+const store = new MongoStore({
+  uri: process.env.MONGO_URI,
+  collection: 'sessions', // The name of the collection where the sessions will be stored
+  mongooseConnection: mongoose.connection,
+  autoRemove: 'interval',
+  autoRemoveInterval: 60, // Remove expired sessions every 1 minute
+});
+app.get('/generate-test-token', (req, res) => {
+  const userId = '64ede5143327ecc4abb91dda'; // Replace with an actual user ID
+  const token = jwt.sign({ userId }, 'your-secret-key', { expiresIn: '1h' });
+  res.json({ token });
+});
+
+app.use(
+  session({
+    secret: 'secret',
+    resave: true,
+    saveUninitialized: true,
+    store: store,
+    cookie: {
+      maxAge: 1000 * 60 * 60 * 24, // 1 day
+      secure: process.env.NODE_ENV === 'production',
+      httpOnly: true,
+      sameSite: 'lax',
+    },
+  })
+);
+app.use(passport.initialize());
+app.use(passport.session());
+
+app.post('/register', async (req, res) => {
+  try {
+    const hashedPassword = await bcrypt.hash(req.body.password, 10);
+
+    const newUser = new User({
+      ...req.body,
+      password: hashedPassword,
+    });
+
+    await newUser.save();
+    res.status(201).send(newUser);
+  } catch (error) {
+    res.status(400).send(error);
+  }
+});
+
+// ... (Other imports and configurations)
+
+app.post('/login', (req, res, next) => {
+  console.log('Login request received:', req.body);
+  passport.authenticate('local', (err, user, info) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    if (!user) {
+      console.log('User not found or invalid credentials:', info.message);
+      return res.status(401).json({ error: info.message });
+    }
+    req.login(user, (err) => {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+      const token = generateAuthToken(user);
+      console.log('Login successful:', user);
+      return res.status(200).json({
+        message: 'Login successful',
+        user: user,
+        token: token,
+        firstname: user.firstname,
+        lastname: user.lastname,
+      });
+    });
+  })(req, res, next);
+});
+
+
+const secretKey = 'your-secret-key'; // Replace with your actual secret key
+
+function generateAuthToken(user) {
+  const token = jwt.sign({ userId: user._id }, secretKey, { expiresIn: '1h' });
+  return token;
+}
+
+
+// ... (Other routes and app.listen)
+
+app.post('/logout', (req, res) => {
+  req.logout(() => {
+    req.session.destroy((err) => {
+      if (err) {
+        console.log('Error: Failed to destroy the session during logout.', err);
+        res.status(500).json({ error: err.message });
+      }
+      res.clearCookie('connect.sid');
+      res.status(200).json({ message: 'Logout successful' });
+    });
+  });
+});
+
+// Add this route to your backend code
+app.get('/check-auth', (req, res) => {
+  if (req.isAuthenticated()) {
+    console.log('User is authenticated:', req.user);
+    res.status(200).json({ isLoggedIn: true, user: req.user });
+  } else {
+    console.log('User is not authenticated');
+    res.status(200).json({ isLoggedIn: false });
+  }
+});
 
 
 
