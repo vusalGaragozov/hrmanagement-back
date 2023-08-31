@@ -4,7 +4,6 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
 const User = require('./user');
 const session = require('express-session');
 const MongoStore = require('connect-mongodb-session')(session);
@@ -63,17 +62,6 @@ passport.deserializeUser((id, done) => {
     });
 });
 
-app.use((req, res, next) => {
-  res.setHeader("Access-Control-Allow-Origin", "http://localhost:3000");
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
-  res.header("Access-Control-Allow-Credentials", true);
-  next();
-});
-
-// ... (Other middleware and route handlers)
-
-
 
 
 mongoose
@@ -95,11 +83,7 @@ const store = new MongoStore({
   autoRemove: 'interval',
   autoRemoveInterval: 60, // Remove expired sessions every 1 minute
 });
-app.get('/generate-test-token', (req, res) => {
-  const userId = '64ede5143327ecc4abb91dda'; // Replace with an actual user ID
-  const token = jwt.sign({ userId }, 'your-secret-key', { expiresIn: '1h' });
-  res.json({ token });
-});
+
 
 app.use(
   session({
@@ -137,39 +121,22 @@ app.post('/register', async (req, res) => {
 // ... (Other imports and configurations)
 
 app.post('/login', (req, res, next) => {
-  console.log('Login request received:', req.body);
   passport.authenticate('local', (err, user, info) => {
     if (err) {
       return res.status(500).json({ error: err.message });
     }
     if (!user) {
-      console.log('User not found or invalid credentials:', info.message);
       return res.status(401).json({ error: info.message });
     }
     req.login(user, (err) => {
       if (err) {
         return res.status(500).json({ error: err.message });
       }
-      const token = generateAuthToken(user);
-      console.log('Login successful:', user);
-      return res.status(200).json({
-        message: 'Login successful',
-        user: user,
-        token: token,
-        firstname: user.firstname,
-        lastname: user.lastname,
-      });
+      return res.status(200).json({ message: 'Login successful', user: user });
     });
   })(req, res, next);
 });
 
-
-const secretKey = 'your-secret-key'; // Replace with your actual secret key
-
-function generateAuthToken(user) {
-  const token = jwt.sign({ userId: user._id }, secretKey, { expiresIn: '1h' });
-  return token;
-}
 
 
 // ... (Other routes and app.listen)
@@ -190,16 +157,13 @@ app.post('/logout', (req, res) => {
 // Add this route to your backend code
 app.get('/check-auth', (req, res) => {
   if (req.isAuthenticated()) {
-    console.log('User is authenticated:', req.user);
-    res.status(200).json({ isLoggedIn: true, user: req.user });
+    res.header('Access-Control-Allow-Origin', 'http://localhost:3000');
+    res.status(200).json({ user: req.user, isAuthenticated: true });
   } else {
-    console.log('User is not authenticated');
-    res.status(200).json({ isLoggedIn: false });
+    res.header('Access-Control-Allow-Origin', 'http://localhost:3000');
+    res.status(200).json({ user: null, isAuthenticated: false });
   }
 });
-
-
-
 
 
 app.listen(PORT, () => {
