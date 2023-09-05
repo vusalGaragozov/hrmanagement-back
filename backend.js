@@ -5,6 +5,7 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
 const User = require('./user');
+const StaffMember = require('./StaffMember');
 const session = require('express-session');
 const MongoStore = require('connect-mongodb-session')(session);
 const passport = require('passport');
@@ -162,6 +163,21 @@ app.get('/check-auth', (req, res) => {
   } else {
     res.header('Access-Control-Allow-Origin', 'http://localhost:3000');
     res.status(200).json({ user: null, isAuthenticated: false });
+  }
+});
+
+// Define the route to handle the POST request
+app.post('/api/staffmember', async (req, res) => {
+  try {
+    // Create a new staff member document using the schema
+    const newStaffMember = new StaffMember(req.body);
+
+    // Save the document to the database
+    await newStaffMember.save();
+
+    res.status(201).json({ message: 'Staff member added successfully' });
+  } catch (error) {
+    res.status(500).json({ error: 'Error adding staff member' });
   }
 });
 
