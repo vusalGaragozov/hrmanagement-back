@@ -166,6 +166,18 @@ app.get('/check-auth', (req, res) => {
   }
 });
 
+// Define the route to fetch staff members
+app.get('/api/staffmembers', async (req, res) => {
+  try {
+    const staffMembers = await StaffMember.find();
+    res.status(200).json(staffMembers);
+  } catch (error) {
+    console.error('Error fetching staff members:', error);
+    res.status(500).json({ error: 'Error fetching staff members' });
+  }
+});
+
+
 // Define the route to handle the POST request
 app.post('/api/staffmember', async (req, res) => {
 try {
