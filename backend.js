@@ -168,18 +168,22 @@ app.get('/check-auth', (req, res) => {
 
 // Define the route to handle the POST request
 app.post('/api/staffmember', async (req, res) => {
-  try {
-    // Create a new staff member document using the schema
-    const newStaffMember = new StaffMember(req.body);
-
-    // Save the document to the database
-    await newStaffMember.save();
-
-    res.status(201).json({ message: 'Staff member added successfully' });
-  } catch (error) {
-    res.status(500).json({ error: 'Error adding staff member' });
+try {
+  const newStaffMember = new StaffMember(req.body);
+  const savedStaffMember = await newStaffMember.save();
+  res.status(201).json({ message: 'Staff member added successfully', staffMember: savedStaffMember });
+} catch (error) {
+  console.error('Error:', error); // Log the error for debugging
+  let response;
+  if (error.name === 'ValidationError') {
+    response = res.status(400).json({ error: 'Validation error', details: error.message });
+  } else {
+    response = res.status(500).json({ error: 'Error adding staff member' });
   }
+  return response; // Make sure to return the response
+}
 });
+
 
 
 app.listen(PORT, () => {
