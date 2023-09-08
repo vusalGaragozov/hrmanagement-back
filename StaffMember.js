@@ -1,5 +1,6 @@
 // Define the schema for your MongoDB collection
 const mongoose = require('mongoose');
+const { format, parse } = require('date-fns');
 
 const staffMemberSchema = new mongoose.Schema({
   addedBy_company: String,
@@ -11,9 +12,9 @@ const staffMemberSchema = new mongoose.Schema({
     gender: String,
     birthDate: {
       type: Date,
-      get: (v) => (v ? require('date-fns').format(v, 'dd-MM-yyyy') : null), // Format date when getting from the database
-      set: (v) => (v ? require('date-fns').parse(v, 'dd-MM-yyyy', new Date()) : null), // Parse date when setting to the database
-    },
+      get: (v) => (v ? format(v, 'dd-MM-yyyy') : null),
+      set: (v) => (v ? parse(v, 'dd-MM-yyyy', new Date()) : null),
+     },
     FINCode: String,
     email: String,
   },
@@ -24,8 +25,8 @@ const staffMemberSchema = new mongoose.Schema({
     field: String,
     startDate: {
       type: Date,
-      get: (v) => (v ? require('date-fns').format(v, 'dd-MM-yyyy') : null),
-      set: (v) => (v ? require('date-fns').parse(v, 'dd-MM-yyyy', new Date()) : null),
+      get: (v) => (v ? format(v, 'dd-MM-yyyy') : null),
+      set: (v) => (v ? parse(v, 'dd-MM-yyyy', new Date()) : null),
     },
     annualLeaveDays: Number,
     contractDuration: String,

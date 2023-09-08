@@ -18,10 +18,17 @@ const userSchema = new mongoose.Schema({
     trim: true,
     lowercase: true,
   },
-  password: {
+  phoneNumberPrefix: {
     type: String,
     required: true,
     trim: true,
+    enum: ['050', '051', '055', '070'], // Add your prefix options
+  },
+  phoneNumberDigits: {
+    type: String,
+    required: true,
+    trim: true,
+    match: /^\d{3}-\d{2}-\d{2}$/,
   },
   organization: {
     type: String,
@@ -32,6 +39,10 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
     trim: true,
+  },
+  password: {
+    type: String,
+    required: true,
   },
 });
 
