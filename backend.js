@@ -138,6 +138,26 @@ app.post('/login', (req, res, next) => {
   })(req, res, next);
 });
 
+// Add this route to your backend code
+app.put('/api/staffmember/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updatedStaff = req.body;
+
+    const staffMember = await StaffMember.findByIdAndUpdate(id, updatedStaff, {
+      new: true, // Return the updated staff member
+    });
+
+    if (!staffMember) {
+      return res.status(404).json({ error: 'Staff member not found' });
+    }
+
+    res.status(200).json({ message: 'Staff member updated successfully', staffMember });
+  } catch (error) {
+    console.error('Error:', error); // Log the error for debugging
+    res.status(500).json({ error: 'Error updating staff member' });
+  }
+});
 
 
 // ... (Other routes and app.listen)
