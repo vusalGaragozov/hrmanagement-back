@@ -139,7 +139,7 @@ app.post('/login', (req, res, next) => {
 });
 
 // Add this route to your backend code
-app.put('/api/staffmember/:id', async (req, res) => {
+app.put('/api/staffmembers/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const updatedStaff = req.body;
