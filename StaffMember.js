@@ -12,9 +12,15 @@ const staffMemberSchema = new mongoose.Schema({
     gender: String,
     birthDate: {
       type: Date,
-      get: (v) => (v ? format(v, 'dd-MM-yyyy') : null),
-      set: (v) => (v ? parse(v, 'dd-MM-yyyy', new Date()) : null),
-     },
+      set: (v) => {
+        const parsedDate = parse(v, 'dd-MM-yyyy', new Date());
+        if (parsedDate instanceof Date && !isNaN(parsedDate)) {
+          return parsedDate;
+        }
+        return null; // Return null for invalid dates
+      },
+      default: null, // or specify a default date if needed
+    },
     FINCode: String,
     email: String,
   },
@@ -25,12 +31,18 @@ const staffMemberSchema = new mongoose.Schema({
     field: String,
     startDate: {
       type: Date,
-      get: (v) => (v ? format(v, 'dd-MM-yyyy') : null),
-      set: (v) => (v ? parse(v, 'dd-MM-yyyy', new Date()) : null),
+      set: (v) => {
+        const parsedDate = parse(v, 'dd-MM-yyyy', new Date());
+        if (parsedDate instanceof Date && !isNaN(parsedDate)) {
+          return parsedDate;
+        }
+        return null; // Return null for invalid dates
+      },
+      default: null, // or specify a default date if needed
     },
     annualLeaveDays: Number,
-    contractDuration: String,
-    weeklyWorkingHours: String,
+    contractDuration: Number,
+    weeklyWorkingHours: Number,
   },
 });
 
