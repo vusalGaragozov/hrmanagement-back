@@ -25,7 +25,7 @@ const staffMemberSchema = new mongoose.Schema({
     email: String,
   },
   corporateInfo: {
-    department: String,
+    lineManager: String,
     position: String,
     grossSalary: Number,
     field: String,
