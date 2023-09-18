@@ -189,13 +189,19 @@ app.get('/check-auth', (req, res) => {
 // Define the route to fetch registered staff members
 app.get('/api/registeredstaffmembers', async (req, res) => {
   try {
-    const staffMembers = await StaffMember.find();
-    res.status(200).json(staffMembers);
+    const user = req.user;
+
+    const lineManagers = await StaffMember.find({
+      
+      addedBy_company: user.organization,
+    });
+    res.status(200).json(lineManagers);
   } catch (error) {
-    console.error('Error fetching registered staff members:', error);
-    res.status(500).json({ error: 'Error fetching registered staff members' });
+    res.status(500).json({ error: 'Error fetching registered line managers' });
   }
 });
+
+
 
 
 // Define the route to fetch staff members
@@ -204,7 +210,6 @@ app.get('/api/staffmembers', async (req, res) => {
     const staffMembers = await StaffMember.find();
     res.status(200).json(staffMembers);
   } catch (error) {
-    console.error('Error fetching staff members:', error);
     res.status(500).json({ error: 'Error fetching staff members' });
   }
 });
