@@ -10,6 +10,7 @@ const session = require('express-session');
 const MongoStore = require('connect-mongodb-session')(session);
 const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
+const crypto = require('crypto');
 
 const app = express();
 const PORT = 3001; // Use port from .env file or default to 3001
@@ -63,7 +64,18 @@ passport.deserializeUser((id, done) => {
     });
 });
 
+function generateRandomPassword() {
+  const length = 10; // You can adjust the length of the password
+  const characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let password = '';
 
+  for (let i = 0; i < length; i++) {
+    const randomIndex = crypto.randomInt(characters.length);
+    password += characters.charAt(randomIndex);
+  }
+
+  return password;
+}
 
 mongoose
   .connect(process.env.MONGO_URI, {
@@ -202,14 +214,27 @@ app.get('/api/registeredstaffmembers', async (req, res) => {
 });
 
 
-
-
 // Define the route to fetch staff members
 app.get('/api/staffmembers', async (req, res) => {
   try {
     const staffMembers = await StaffMember.find();
     res.status(200).json(staffMembers);
   } catch (error) {
+    res.status(500).json({ error: 'Error fetching staff members' });
+  }
+});
+
+
+app.get('/api/staffmemberstoregister', async (req, res) => {
+  try {
+    const email = req.query.email; // Get the email from the query parameters
+
+    // Modify the database query to filter staff members by email
+    const staffmembers = await StaffMember.find({ 'personalInfo.email': email });
+
+    res.status(200).json({ staffmembers });
+  } catch (error) {
+    console.error('Error fetching staff members:', error);
     res.status(500).json({ error: 'Error fetching staff members' });
   }
 });
@@ -232,6 +257,29 @@ try {
   return response; // Make sure to return the response
 }
 });
+
+// Modify the route to return user data for the authenticated user
+// Modify the route to fetch user data based on the user's ID in the session
+app.get('/api/user', (req, res) => {
+  if (req.isAuthenticated()) {
+    const userId = req.user.id; // Get the user's ID from the authenticated user
+    User.findById(userId) // Fetch the user data based on the ID
+      .then((user) => {
+        if (user) {
+          res.status(200).json({ user }); // Return the user data
+        } else {
+          res.status(404).json({ error: 'User not found' });
+        }
+      })
+      .catch((error) => {
+        console.error('Error fetching user data:', error);
+        res.status(500).json({ error: 'Error fetching user data' });
+      });
+  } else {
+    res.status(401).json({ error: 'Not authenticated' });
+  }
+});
+
 
 
 

@@ -5,6 +5,7 @@ const { format, parse } = require('date-fns');
 const staffMemberSchema = new mongoose.Schema({
   addedBy_company: String,
   addedBy_email: String,
+  temporaryPassword: String,
   personalInfo: {
     name: String,
     surname: String,
@@ -22,7 +23,20 @@ const staffMemberSchema = new mongoose.Schema({
       default: null, // or specify a default date if needed
     },
     FINCode: String,
+    phoneNumberPrefix: {
+      type: String,
+      required: true,
+      trim: true,
+      enum: ['050', '051', '055', '070'], // Add your prefix options
+    },
+    phoneNumberDigits: {
+      type: String,
+      required: true,
+      trim: true,
+      match: /^\d{3}-\d{2}-\d{2}$/,
+    },
     email: String,
+   
   },
   corporateInfo: {
     lineManager: String,
