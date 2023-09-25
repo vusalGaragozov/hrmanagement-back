@@ -225,7 +225,29 @@ app.get('/api/staffmembers', async (req, res) => {
 });
 
 
+// Backend route
 app.get('/api/staffmemberstoregister', async (req, res) => {
+  try {
+    const userEmail = req.user.email; // Get the user's email from the authenticated user object
+
+    // Find the staff member based on the user's email
+    const staffMember = await StaffMember.findOne({ 'personalInfo.email': userEmail });
+
+    if (!staffMember) {
+      return res.status(404).json({ error: 'Staff member not found' });
+    }
+
+    // Access the "corporateInfo.annualLeaveDays"
+    const annualLeaveDays = staffMember.corporateInfo.annualLeaveDays;
+    const position = staffMember.corporateInfo.position;
+    res.status(200).json({ staffMember, annualLeaveDays, position });
+  } catch (error) {
+    console.error('Error fetching staff member:', error);
+    res.status(500).json({ error: 'Error fetching staff member' });
+  }
+});
+
+app.get('/api/staffregistrationpage', async (req, res) => {
   try {
     const email = req.query.email; // Get the email from the query parameters
 
@@ -238,7 +260,6 @@ app.get('/api/staffmemberstoregister', async (req, res) => {
     res.status(500).json({ error: 'Error fetching staff members' });
   }
 });
-
 
 // Define the route to handle the POST request
 app.post('/api/staffmember', async (req, res) => {
