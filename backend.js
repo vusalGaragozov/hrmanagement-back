@@ -11,6 +11,8 @@ const MongoStore = require('connect-mongodb-session')(session);
 const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 const crypto = require('crypto');
+const Vacation = require('./Vacation'); // Import the Mongoose model for Application
+
 
 const app = express();
 const PORT = 3001; // Use port from .env file or default to 3001
@@ -132,6 +134,37 @@ app.post('/register', async (req, res) => {
 });
 
 // ... (Other imports and configurations)
+
+
+// Define the route to handle the POST request for application submission
+app.post('/api/submit-vacation', async (req, res) => {
+  try {
+    const {
+      startDate,
+      endDate,
+      paymentTiming,
+      selectedOptionLabel,
+      selectedOptionsignLabel,
+    } = req.body;
+
+    // Create a new application document using the schema
+    const vacation = new Vacation({
+      startDate,
+      endDate,
+      paymentTiming,
+      selectedOptionLabel,
+      selectedOptionsignLabel,
+    });
+
+    // Save the application to the database
+    await vacation.save();
+
+    res.status(201).json({ message: 'Application submitted successfully' });
+  } catch (error) {
+    console.error('Error submitting application:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 app.post('/login', (req, res, next) => {
   passport.authenticate('local', (err, user, info) => {
