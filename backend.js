@@ -11,6 +11,9 @@ const MongoStore = require('connect-mongodb-session')(session);
 const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 const crypto = require('crypto');
+const Vacation = require('./Vacation'); // Import the Mongoose model for Application
+
+
 
 const app = express();
 const PORT = 3001; // Use port from .env file or default to 3001
@@ -133,6 +136,63 @@ app.post('/register', async (req, res) => {
 
 // ... (Other imports and configurations)
 
+
+app.post('/api/submit-vacation', async (req, res) => {
+  try {
+    const {
+      userFullName,
+      userEmail,
+      startDate,
+      endDate,
+      paymentTiming,
+      selectedOptionLabel,
+      lineManagerEmail,
+      selectedOptionsignLabel,
+      directorEmail,
+    } = req.body;
+
+    // Validate date inputs
+    if (!isValidDate(startDate) || !isValidDate(endDate)) {
+      return res.status(400).json({ error: 'Invalid date format' });
+    }
+
+    // Check if end date is after start date
+    const startDateObj = new Date(startDate);
+    const endDateObj = new Date(endDate);
+    if (endDateObj <= startDateObj) {
+      return res.status(400).json({ error: 'End date should be after start date' });
+    }
+
+    // Other validations and processing...
+
+    // Create a new application document using the schema
+    const vacation = new Vacation({
+      userFullName,
+      userEmail,
+      startDate,
+      endDate,
+      paymentTiming,
+      selectedOptionLabel,
+      lineManagerEmail,
+      selectedOptionsignLabel,
+      directorEmail,
+    });
+
+    // Save the application to the database
+    await vacation.save();
+
+    res.status(201).json({ message: 'Application submitted successfully' });
+  } catch (error) {
+    console.error('Error submitting application:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Helper function to validate date format
+function isValidDate(dateString) {
+  return !isNaN(Date.parse(dateString));
+}
+
 app.post('/login', (req, res, next) => {
   passport.authenticate('local', (err, user, info) => {
     if (err) {
@@ -187,6 +247,15 @@ app.post('/logout', (req, res) => {
   });
 });
 
+app.get('/api/vacation-data', async (req, res) => {
+  try {
+    const vacations = await Vacation.find(); // Fetch all vacation records from the database
+    res.status(200).json(vacations);
+  } catch (error) {
+    console.error('Error fetching vacation data:', error);
+    res.status(500).json({ error: 'An error occurred while fetching vacation data' });
+  }
+});
 // Add this route to your backend code
 app.get('/check-auth', (req, res) => {
   if (req.isAuthenticated()) {
@@ -203,11 +272,11 @@ app.get('/api/registeredstaffmembers', async (req, res) => {
   try {
     const user = req.user;
 
-    const lineManagers = await StaffMember.find({
+    const selectedOptionLabels = await StaffMember.find({
       
       addedBy_company: user.organization,
     });
-    res.status(200).json(lineManagers);
+    res.status(200).json(selectedOptionLabels);
   } catch (error) {
     res.status(500).json({ error: 'Error fetching registered line managers' });
   }
