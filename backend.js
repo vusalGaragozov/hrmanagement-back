@@ -11,6 +11,7 @@ const MongoStore = require('connect-mongodb-session')(session);
 const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 const crypto = require('crypto');
+const Vacation = require('./Vacation'); // Import the Mongoose model for Application
 
 const app = express();
 const PORT = 3001; // Use port from .env file or default to 3001
