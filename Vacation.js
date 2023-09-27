@@ -1,33 +1,22 @@
 const mongoose = require('mongoose');
-const {parser} = require('date-fns');
 
 const vacationSchema = new mongoose.Schema({
-
-startDate: {
-  type: Date,
-  set: function(v) {
-    const parsedDate = parse(v, 'MMM D, yyyy', new Date());
-    if (parsedDate instanceof Date && !isNaN(parsedDate)) {
-      return parsedDate;
-    }
-    return null; // Return null for invalid dates
+  userFullName: String,
+  userEmail: String,
+  startDate: {
+    type: Date,
+    required: true,
   },
-  default: null, // or specify a default date if needed
-},
-endDate: {
-  type: Date,
-  set: function(v) {
-    const parsedDate = parse(v, 'MMM D, yyyy', new Date());
-    if (parsedDate instanceof Date && !isNaN(parsedDate)) {
-      return parsedDate;
-    }
-    return null; // Return null for invalid dates
+  endDate: {
+    type: Date,
+    required: true,
   },
-  default: null, // or specify a default date if needed
-},
   paymentTiming: String,
   selectedOptionLabel: String,
+  lineManagerEmail: String,
   selectedOptionsignLabel: String,
+  directorEmail: String,
+  userFullName: String,
 });
 
 const Vacation = mongoose.model('Vacation', vacationSchema);

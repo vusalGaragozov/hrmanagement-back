@@ -136,24 +136,45 @@ app.post('/register', async (req, res) => {
 // ... (Other imports and configurations)
 
 
-// Define the route to handle the POST request for application submission
 app.post('/api/submit-vacation', async (req, res) => {
   try {
     const {
+      userFullName,
+      userEmail,
       startDate,
       endDate,
       paymentTiming,
       selectedOptionLabel,
+      lineManagerEmail,
       selectedOptionsignLabel,
+      directorEmail,
     } = req.body;
+
+    // Validate date inputs
+    if (!isValidDate(startDate) || !isValidDate(endDate)) {
+      return res.status(400).json({ error: 'Invalid date format' });
+    }
+
+    // Check if end date is after start date
+    const startDateObj = new Date(startDate);
+    const endDateObj = new Date(endDate);
+    if (endDateObj <= startDateObj) {
+      return res.status(400).json({ error: 'End date should be after start date' });
+    }
+
+    // Other validations and processing...
 
     // Create a new application document using the schema
     const vacation = new Vacation({
+      userFullName,
+      userEmail,
       startDate,
       endDate,
       paymentTiming,
       selectedOptionLabel,
+      lineManagerEmail,
       selectedOptionsignLabel,
+      directorEmail,
     });
 
     // Save the application to the database
@@ -165,6 +186,11 @@ app.post('/api/submit-vacation', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+// Helper function to validate date format
+function isValidDate(dateString) {
+  return !isNaN(Date.parse(dateString));
+}
 
 app.post('/login', (req, res, next) => {
   passport.authenticate('local', (err, user, info) => {
@@ -236,11 +262,11 @@ app.get('/api/registeredstaffmembers', async (req, res) => {
   try {
     const user = req.user;
 
-    const lineManagers = await StaffMember.find({
+    const selectedOptionLabels = await StaffMember.find({
       
       addedBy_company: user.organization,
     });
-    res.status(200).json(lineManagers);
+    res.status(200).json(selectedOptionLabels);
   } catch (error) {
     res.status(500).json({ error: 'Error fetching registered line managers' });
   }
