@@ -13,6 +13,7 @@ const LocalStrategy = require('passport-local').Strategy;
 const crypto = require('crypto');
 const Vacation = require('./Vacation'); // Import the Mongoose model for Application
 
+
 const app = express();
 const PORT = 3001; // Use port from .env file or default to 3001
 
@@ -147,8 +148,10 @@ app.post('/api/submit-vacation', async (req, res) => {
       lineManagerEmail,
       selectedOptionsignLabel,
       directorEmail,
+      status_1,
+      status_2,
     } = req.body;
-
+console.log(req.body);
     // Validate date inputs
     if (!isValidDate(startDate) || !isValidDate(endDate)) {
       return res.status(400).json({ error: 'Invalid date format' });
@@ -164,6 +167,8 @@ app.post('/api/submit-vacation', async (req, res) => {
     // Other validations and processing...
 
     // Create a new application document using the schema
+    const comments = [];
+
     const vacation = new Vacation({
       userFullName,
       userEmail,
@@ -174,6 +179,8 @@ app.post('/api/submit-vacation', async (req, res) => {
       lineManagerEmail,
       selectedOptionsignLabel,
       directorEmail,
+      status_1,
+      status_2,
     });
 
     // Save the application to the database
@@ -190,6 +197,41 @@ app.post('/api/submit-vacation', async (req, res) => {
 function isValidDate(dateString) {
   return !isNaN(Date.parse(dateString));
 }
+
+
+// Add this route to your backend code
+app.put('/api/update-status/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { newStatus_1, newStatus_2 } = req.body;
+
+    // Find the vacation record by ID
+    const vacation = await Vacation.findById(id);
+
+    if (!vacation) {
+      console.log(`Vacation not found for ID: ${id}`);
+      return res.status(404).json({ error: 'Vacation record not found' });
+    }
+
+    // Update the status fields based on the provided values
+    if (newStatus_1 !== undefined) {
+      vacation.status_1 = newStatus_1;
+    }
+    if (newStatus_2 !== undefined) {
+      vacation.status_2 = newStatus_2;
+    }
+
+    // Save the updated vacation record
+    const updatedVacation = await vacation.save();
+
+    res.status(200).json({ message: 'Status updated successfully', vacation: updatedVacation });
+  } catch (error) {
+    console.error('Error updating status:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+
 
 app.post('/login', (req, res, next) => {
   passport.authenticate('local', (err, user, info) => {
@@ -245,15 +287,6 @@ app.post('/logout', (req, res) => {
   });
 });
 
-app.get('/api/vacation-data', async (req, res) => {
-  try {
-    const vacations = await Vacation.find(); // Fetch all vacation records from the database
-    res.status(200).json(vacations);
-  } catch (error) {
-    console.error('Error fetching vacation data:', error);
-    res.status(500).json({ error: 'An error occurred while fetching vacation data' });
-  }
-});
 // Add this route to your backend code
 app.get('/check-auth', (req, res) => {
   if (req.isAuthenticated()) {
@@ -290,6 +323,69 @@ app.get('/api/staffmembers', async (req, res) => {
     res.status(500).json({ error: 'Error fetching staff members' });
   }
 });
+
+app.get('/api/vacation-data', async (req, res) => {
+  try {
+    const vacationData = await Vacation.find();
+    res.status(200).json(vacationData);
+  } catch (error) {
+    console.error('Error fetching vacation data:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/api/add-comment/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { commentedUserFullName, comment } = req.body;
+
+    // Find the vacation record by ID
+    const vacation = await Vacation.findById(id);
+
+    if (!vacation) {
+      console.log(`Vacation not found for ID: ${id}`);
+      return res.status(404).json({ error: 'Vacation record not found' });
+    }
+    
+    if (!vacation.comments) {
+      vacation.comments = []; // Initialize comments array if it doesn't exist
+    }
+
+    // Add the comment to the vacation record
+    vacation.comments.push({ commentedUserFullName, comment });
+
+    // Save the updated vacation record
+    const updatedVacation = await vacation.save();
+    
+    console.log('Updated Vacation with Comment:', updatedVacation); // Log the updated vacation
+
+    res.status(201).json({ message: 'Comment added successfully' });
+  } catch (error) {
+    console.error('Error adding comment:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Add this route to your backend code
+app.get('/api/get-comments/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Find the vacation record by ID
+    const vacation = await Vacation.findById(id);
+
+    if (!vacation) {
+      return res.status(404).json({ error: 'Vacation record not found' });
+    }
+
+    // Return the comments for the vacation record
+    res.status(200).json({ comments: vacation.comments });
+  } catch (error) {
+    console.error('Error fetching comments:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 
 
 // Backend route

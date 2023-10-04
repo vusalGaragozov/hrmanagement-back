@@ -16,7 +16,14 @@ const vacationSchema = new mongoose.Schema({
   lineManagerEmail: String,
   selectedOptionsignLabel: String,
   directorEmail: String,
-  userFullName: String,
+  comments: [
+    {
+      commentedUserFullName: String,
+      comment: String,
+    },
+  ],
+  status_1: String,
+  status_2: String,
 });
 
 const Vacation = mongoose.model('Vacation', vacationSchema);
