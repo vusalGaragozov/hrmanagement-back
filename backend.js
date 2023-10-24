@@ -12,10 +12,17 @@ const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 const crypto = require('crypto');
 const Vacation = require('./Vacation'); // Import the Mongoose model for Application
+const multer = require('multer');
+const XLSX = require('xlsx');
+const EBITDA = require('./EBITDA');
+const router = express.Router();
+const path = require('path');
 
 
 const app = express();
 const PORT = 3001; // Use port from .env file or default to 3001
+const upload = multer({ dest: 'uploads/' });
+
 
 app.use(bodyParser.json());
 
@@ -99,6 +106,35 @@ const store = new MongoStore({
   autoRemoveInterval: 60, // Remove expired sessions every 1 minute
 });
 
+app.post('/api/upload', upload.single('file'), async (req, res) => {
+  try {
+    const workbook = XLSX.readFile(req.file.path);
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    const data = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+    for (let i = 1; i < data.length; i++) {
+      const entity = data[i][0];
+      const planned = parseFloat(data[i][1]);
+      const actual = parseFloat(data[i][2]);
+      const ebitda = new EBITDA({ Entity: entity, Planned: planned, Actual: actual });
+      await ebitda.save();
+    }
+    res.send('Data saved to database.');
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Internal server error.');
+  }
+});
+
+app.get('/api/ebitda', async (req, res) => {
+  try {
+    const data = await EBITDA.find();
+    res.send(data);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Internal server error.');
+  }
+});
 
 app.use(
   session({
@@ -132,9 +168,6 @@ app.post('/register', async (req, res) => {
     res.status(400).send(error);
   }
 });
-
-// ... (Other imports and configurations)
-
 
 app.post('/api/submit-vacation', async (req, res) => {
   try {
@@ -271,8 +304,6 @@ app.put('/api/staffmembers/:id', async (req, res) => {
   }
 });
 
-
-// ... (Other routes and app.listen)
 
 app.post('/logout', (req, res) => {
   req.logout(() => {
@@ -444,6 +475,33 @@ try {
 
 // Modify the route to return user data for the authenticated user
 // Modify the route to fetch user data based on the user's ID in the session
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/');
+  },
+  filename: function (req, file, cb) {
+    cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
+  }
+});
+
+// Set up multer upload
+const uploadphoto = multer({ storage: storage });
+
+// Handle photo upload
+app.post('/api/upload-photo', uploadphoto.single('photo'), (req, res) => {
+  try {
+    const file = req.file;
+    if (!file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+    res.status(200).json({ message: 'File uploaded successfully', filename: file.filename });
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ error: 'Error uploading file' });
+  }
+});
+
 app.get('/api/user', (req, res) => {
   if (req.isAuthenticated()) {
     const userId = req.user.id; // Get the user's ID from the authenticated user
@@ -463,8 +521,6 @@ app.get('/api/user', (req, res) => {
     res.status(401).json({ error: 'Not authenticated' });
   }
 });
-
-
 
 
 app.listen(PORT, () => {

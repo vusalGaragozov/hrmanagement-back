@@ -11,6 +11,10 @@ const staffMemberSchema = new mongoose.Schema({
     surname: String,
     fatherName: String,
     gender: String,
+    profilePicture: {
+      data: Buffer, // Binary image data
+      contentType: String, // Mime type of the image (e.g., image/jpeg)
+    },
     birthDate: {
       type: Date,
       set: (v) => {
